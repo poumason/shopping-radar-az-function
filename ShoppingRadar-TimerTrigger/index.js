@@ -12,11 +12,13 @@ module.exports = async function (context, myTimer) {
     context.log('Shopping Radar is running late!');
   }
   context.log('Shopping Radar timer trigger function ran!', timeStamp);
-  await _execute();
-  console.log('Shppoing Radar executed process.');
+
+  await _execute(context);
+
+  context.log('Shppoing Radar executed process.');
 };
 
-async function _execute () {
+async function _execute (context) {
   /*
   - get products from airtable
   - loop to check api with type
@@ -34,7 +36,7 @@ async function _execute () {
   }
 
   for (const item of data.records) {
-    console.log(item);
+    context.log(item);
     // remove not used meta
     delete item.createdTime;
     const productId = item.fields.id;
@@ -42,7 +44,7 @@ async function _execute () {
     const name = item.fields.name;
 
     if (isEmptyOrNull(productId) || isEmptyOrNull(url)) {
-      console.log(`${item.id} ${name} lost product id and url.`);
+      context.log(`${item.id} ${name} lost product id and url.`);
       continue;
     }
 
@@ -51,7 +53,7 @@ async function _execute () {
     const result = await rutenAPI.check(productId, url);
 
     if (lastIsSelling === result) {
-      console.log(`狀態跟上次一樣: ${item.id} ${name} `);
+      context.log(`狀態跟上次一樣: ${item.id} ${name} `);
       continue;
     }
 
@@ -64,6 +66,6 @@ async function _execute () {
     item.fields.updated_at = timestamp;
     item.fields.is_selling = result;
     const updated = await productsTable.updateProduct(item);
-    console.log(updated);
+    context.log(updated);
   }
 }

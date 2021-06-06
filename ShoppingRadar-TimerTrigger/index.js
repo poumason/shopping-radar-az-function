@@ -1,9 +1,8 @@
 
-const { isEmptyOrNull } = require('./lib/utility');
-const RutenAPI = require('./lib/ruten_api');
-const TelegramAPI = require('./lib/bot/telegram_api');
-
-const ProductsAPI = require('./lib/db/products_table_api');
+const { isEmptyOrNull } = require('../SharedCode/utility');
+const RutenAPI = require('../SharedCode/ruten_api');
+const TelegramAPI = require('../SharedCode/bot/telegram_api');
+const ProductsAPI = require('../SharedCode/db/products_table_api');
 
 module.exports = async function (context, myTimer) {
   const timeStamp = new Date().toISOString();

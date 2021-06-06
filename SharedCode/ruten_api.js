@@ -21,7 +21,7 @@ class RutenAPI {
       const str = 'RT.context = ';
 
       if (text.indexOf(str) >= 0) {
-      // console.log('got it');
+        // console.log('got it');
         const strJson = text.substr(text.indexOf(str) + str.length).replace(';', '');
         const json = JSON.parse(strJson);
         // console.log(json);
@@ -75,6 +75,29 @@ class RutenAPI {
   //   });
   //   return enableReserve;
   // }
+
+  async getSearchProducts (sellerId, keyword) {
+    const response = await axios.get(`https://rtapi.ruten.com.tw/api/search/v3/index.php/core/seller/${sellerId}/prod`, {
+      params: {
+        sort: 'new/dc',
+        q: keyword
+      }
+    });
+
+    return response.data;
+  }
+
+  async getProdcutsInfo (productIds) {
+    const ids = productIds.join(',');
+
+    const response = await axios.get('https://rtapi.ruten.com.tw/api/prod/v2/index.php/prod', {
+      params: {
+        id: ids
+      }
+    });
+
+    return response.data;
+  }
 }
 
 module.exports = RutenAPI;

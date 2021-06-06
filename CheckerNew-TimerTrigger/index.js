@@ -37,7 +37,7 @@ async function _execute (context) {
       const valiedPrice = isAvailablePrice(Math.max(...product.PriceRange));
 
       if (!valiedPrice) {
-        console.log(`未開放預購: ${product.ProdName}`);
+        context.log(`未開放預購: ${product.ProdName}`);
         continue;
       }
 
@@ -62,15 +62,15 @@ async function _execute (context) {
     }
   }
 
+  context.log(newProducts);
+
   for (const newItem of newProducts) {
     const exist = await productsAPI.getProducts(`{id}=${newItem.fields.id}`);
 
     if (!exist || exist.records.length === 0) {
       // add new item
       await productsAPI.createProduct(newItem);
-      console.log(`create item: ${newItem.name}`);
+      context.log(`create item: ${newItem.name}`);
     }
   }
-
-  console.log(newProducts);
 }

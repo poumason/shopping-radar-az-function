@@ -49,7 +49,8 @@ async function _execute (context) {
 
     const lastIsSelling = item.fields.is_selling ?? false;
 
-    const result = await rutenAPI.check(productId, url);
+    // const result = await rutenAPI.check(productId, url);
+    const result = await rutenAPI.check2(productId);
 
     if (lastIsSelling === result) {
       context.log(`狀態跟上次一樣: ${item.id} ${name} `);

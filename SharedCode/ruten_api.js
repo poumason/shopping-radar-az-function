@@ -1,7 +1,32 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const { isAvailablePrice } = require('./utility');
 
 class RutenAPI {
+  async check2 (productId, url) {
+    const infoResult = await this.getProdcutsInfo([productId]);
+
+    if (!infoResult || infoResult.length === 0) {
+      console.log(`Can not get information of product: ${productId}`);
+      return false;
+    }
+
+    const info = infoResult[0];
+    // info fields: ProdId, ProdName, PriceRange, StockQty, SoldQty
+    console.log(info);
+    const validatedPrice = isAvailablePrice(Math.max(...info.PriceRange));
+
+    // 檢查金額是否正常
+    if (!validatedPrice) {
+      console.log(`${info.ProdName} 未開賣.`);
+      return false;
+    }
+
+    // 檢查是否還有數量
+    console.log(`${info.ProdName} 是否可以購買: ${info.StockQty > info.SoldQty}`);
+    return info.StockQty > info.SoldQty;
+  }
+
   async check (productId, url) {
     const response = await axios.get(url);
     console.log(`status code: ${response.status}`);

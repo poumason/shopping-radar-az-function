@@ -3,12 +3,14 @@ require('dotenv').config();
 const ProductsAPI = require('../SharedCode/db/products_table_api');
 const SellerAPI = require('../SharedCode/db/seller_api');
 const RutenAPI = require('../SharedCode/ruten_api');
+const RadarAPI = require('../SharedCode/db/radar_table_api');
 const { isAvailablePrice } = require('../SharedCode/utility');
 
 async function main () {
   const rutenAPI = new RutenAPI();
   const productsAPI = new ProductsAPI();
   const sellerAPI = new SellerAPI();
+  const radarAPI = new RadarAPI();
   const sellers = await sellerAPI.getSellers();
 
   const newProducts = [];
@@ -56,8 +58,25 @@ async function main () {
 
     if (!exist || exist.records.length === 0) {
       // add new item
-      await productsAPI.createProduct(newItem);
+      const addedResult = await productsAPI.createProduct(newItem);
+
+      if (!addedResult || addedResult.records.length === 0) {
+        // add item failed.
+        continue;
+      }
+
       console.log(`create item: ${newItem.name}`);
+
+      const addedItem = addedResult.records[0];
+
+      const radarResult = await radarAPI.createRadar({
+        fields: {
+          Products: [addedItem.id],
+          Charts: ['recUiDkMKUQONnHxl']
+        }
+      });
+
+      console.log(`create radar: ${radarResult.records[0].id}`);
     }
   }
 

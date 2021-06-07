@@ -5,6 +5,9 @@ const RutenAPI = require('../SharedCode/ruten_api');
 const RadarAPI = require('../SharedCode/db/radar_table_api');
 const { isAvailablePrice } = require('../SharedCode/utility');
 
+const productsAPI = new ProductsAPI();
+const radarAPI = new RadarAPI();
+
 module.exports = async function (context, myTimer) {
   const timeStamp = new Date().toISOString();
 
@@ -19,9 +22,7 @@ module.exports = async function (context, myTimer) {
 
 async function _execute (context) {
   const rutenAPI = new RutenAPI();
-  const productsAPI = new ProductsAPI();
   const sellerAPI = new SellerAPI();
-  const radarAPI = new RadarAPI();
   const sellers = await sellerAPI.getSellers();
 
   const newProducts = [];
@@ -53,7 +54,8 @@ async function _execute (context) {
               url: `https://www.ruten.com.tw/item/show?${product.ProdId}`,
               updated_at: (new Date()).getTime() / 1000,
               is_selling: false,
-              type: 'ruten'
+              type: 'ruten',
+              closed_at: (new Date(product.CloseTime)).getTime() / 1000
             }
           };
 
@@ -68,28 +70,37 @@ async function _execute (context) {
 
   for (const newItem of newProducts) {
     const exist = await productsAPI.getProducts(`{id}=${newItem.fields.id}`);
+    const existItem = exist?.records[0];
 
-    if (!exist || exist.records.length === 0) {
-      // add new item
-      const addedResult = await productsAPI.createProduct(newItem);
-
-      if (!addedResult || addedResult.records.length === 0) {
-        // add item failed.
-        continue;
-      }
-
-      context.log(`create item: ${newItem.name}`);
-
-      const addedItem = addedResult.records[0];
-
-      const radarResult = await radarAPI.createRadar({
-        fields: {
-          Products: [addedItem.id],
-          Charts: ['recUiDkMKUQONnHxl']
-        }
-      });
-
-      context.log(`create radar: ${radarResult.records[0].id}`);
+    if (!existItem) {
+      await _addItem(context, newItem);
+    } else {
+      await _updateItem(context, existItem, newItem);
     }
   }
+}
+
+async function _addItem (context, newItem) {
+  console.log(newItem);
+  const addedResult = await productsAPI.createProduct(newItem);
+  const addedItem = addedResult.records[0];
+  context.log(`create item: ${addedItem.id}`);
+
+  const radarResult = await radarAPI.createRadar({
+    fields: {
+      Products: [addedItem.id],
+      Charts: ['recUiDkMKUQONnHxl']
+    }
+  });
+
+  context.log(`create radar: ${radarResult.records[0].id}`);
+}
+
+async function _updateItem (context, existItem, newItem) {
+  existItem.fields.closed_at = newItem.fields.closed_at;
+  existItem.fields.updated_at = newItem.fields.updated_at;
+  delete existItem.createdTime;
+  const updatedResult = await productsAPI.updateProduct(existItem);
+  context.log(updatedResult);
+  context.log(`update item: ${existItem.id}`);
 }

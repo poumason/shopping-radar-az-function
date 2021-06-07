@@ -1,16 +1,18 @@
 require('dotenv').config();
 
-const ProductsAPI = require('../SharedCode/db/products_table_api');
 const SellerAPI = require('../SharedCode/db/seller_api');
-const RutenAPI = require('../SharedCode/ruten_api');
 const RadarAPI = require('../SharedCode/db/radar_table_api');
+const RutenAPI = require('../SharedCode/ruten_api');
+const ProductsAPI = require('../SharedCode/db/products_table_api');
+
 const { isAvailablePrice } = require('../SharedCode/utility');
 
+const rutenAPI = new RutenAPI();
+const productsAPI = new ProductsAPI();
+const radarAPI = new RadarAPI();
+
 async function main () {
-  const rutenAPI = new RutenAPI();
-  const productsAPI = new ProductsAPI();
   const sellerAPI = new SellerAPI();
-  const radarAPI = new RadarAPI();
   const sellers = await sellerAPI.getSellers();
 
   const newProducts = [];
@@ -19,6 +21,7 @@ async function main () {
     // get Products
     const proResult = await rutenAPI.getSearchProducts(seller.fields.id, seller.fields.search_keyword);
     const ids = proResult.Rows.map(i => i.Id);
+    // ids.push('22045888144703');
     const detailResult = await rutenAPI.getProdcutsInfo(ids);
 
     // fields: ProdId, ProdName, PriceRange, StockQty, SoldQty
@@ -42,7 +45,8 @@ async function main () {
               url: `https://www.ruten.com.tw/item/show?${product.ProdId}`,
               updated_at: (new Date()).getTime() / 1000,
               is_selling: false,
-              type: 'ruten'
+              type: 'ruten',
+              closed_at: (new Date(product.CloseTime)).getTime() / 1000
             }
           };
 
@@ -55,32 +59,41 @@ async function main () {
 
   for (const newItem of newProducts) {
     const exist = await productsAPI.getProducts(`{id}=${newItem.fields.id}`);
+    const existItem = exist?.records[0];
 
-    if (!exist || exist.records.length === 0) {
-      // add new item
-      const addedResult = await productsAPI.createProduct(newItem);
-
-      if (!addedResult || addedResult.records.length === 0) {
-        // add item failed.
-        continue;
-      }
-
-      console.log(`create item: ${newItem.name}`);
-
-      const addedItem = addedResult.records[0];
-
-      const radarResult = await radarAPI.createRadar({
-        fields: {
-          Products: [addedItem.id],
-          Charts: ['recUiDkMKUQONnHxl']
-        }
-      });
-
-      console.log(`create radar: ${radarResult.records[0].id}`);
+    if (!existItem) {
+      await _addItem(newItem);
+    } else {
+      await _updateItem(existItem, newItem);
     }
   }
 
-  console.log(newProducts);
+  // console.log(newProducts);
+}
+
+async function _addItem (newItem) {
+  const addedResult = await productsAPI.createProduct(newItem);
+  const addedItem = addedResult.records[0];
+  console.log(`create item: ${addedItem.id}`);
+
+  const radarResult = await radarAPI.createRadar({
+    fields: {
+      Products: [addedItem.id],
+      Chats: ['recUiDkMKUQONnHxl']
+    }
+  });
+
+  console.log(`create radar: ${radarResult.records[0].id}`);
+}
+
+async function _updateItem (existItem, newItem) {
+  console.log(newItem);
+  existItem.fields.closed_at = newItem.fields.closed_at;
+  existItem.fields.updated_at = newItem.fields.updated_at;
+  delete existItem.createdTime;
+  const updatedResult = await productsAPI.updateProduct(existItem);
+  console.log(updatedResult);
+  console.log(`update item: ${existItem.id}`);
 }
 
 main().then(() => console.log('Done')).catch((e) => console.error(e));

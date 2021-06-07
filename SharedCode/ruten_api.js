@@ -5,6 +5,7 @@ const { isAvailablePrice } = require('./utility');
 class RutenAPI {
   async check2 (productId, url) {
     const infoResult = await this.getProdcutsInfo([productId]);
+    // console.log(infoResult);
 
     if (!infoResult || infoResult.length === 0) {
       console.log(`Can not get information of product: ${productId}`);

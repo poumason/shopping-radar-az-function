@@ -58,7 +58,7 @@ async function _execute (context) {
     }
 
     if (result) {
-      TelegramAPI.notify('224300083', `*立即購買*\n\n[${name}](${url})`);
+      TelegramAPI.notify('224300083', `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
     } else {
       TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
     }

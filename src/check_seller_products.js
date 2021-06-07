@@ -46,7 +46,8 @@ async function main () {
               updated_at: (new Date()).getTime() / 1000,
               is_selling: false,
               type: 'ruten',
-              closed_at: (new Date(product.CloseTime)).getTime() / 1000
+              closed_at: (new Date(product.CloseTime)).getTime() / 1000,
+              price: Math.min(...product.PriceRange)
             }
           };
 
@@ -90,6 +91,7 @@ async function _updateItem (existItem, newItem) {
   console.log(newItem);
   existItem.fields.closed_at = newItem.fields.closed_at;
   existItem.fields.updated_at = newItem.fields.updated_at;
+  existItem.fields.price = newItem.fields.price;
   delete existItem.createdTime;
   const updatedResult = await productsAPI.updateProduct(existItem);
   console.log(updatedResult);

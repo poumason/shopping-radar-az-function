@@ -60,7 +60,7 @@ async function _execute (context) {
     if (result) {
       TelegramAPI.notify('224300083', `*立即購買*\n\n[${name}](${url})`);
     } else {
-      TelegramAPI.notify('224300083', `_未開賣_\n\n[${name}](${url})`, true);
+      TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
     }
 
     item.fields.updated_at = timestamp;

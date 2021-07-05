@@ -1,8 +1,4 @@
-
-const { isEmptyOrNull } = require('../SharedCode/utility');
-const RutenAPI = require('../SharedCode/ruten_api');
-const TelegramAPI = require('../SharedCode/bot/telegram_api');
-const ProductsAPI = require('../SharedCode/db/products_table_api');
+const { isEmptyOrNull, RutenAPI, TelegramAPI, ProductsAPI } = require('shopping-radar-sharedcode');
 
 module.exports = async function (context, myTimer) {
   const timeStamp = new Date().toISOString();
@@ -30,11 +26,11 @@ async function _execute (context) {
 
   const data = await productsTable.getProducts();
 
-  if (!data || data.records.length === 0) {
+  if (!data || data.length === 0) {
     return;
   }
 
-  for (const item of data.records) {
+  for (const item of data) {
     context.log(item);
     // remove not used meta
     delete item.createdTime;

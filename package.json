@@ -13,7 +13,8 @@
     "cheerio": "^1.0.0-rc.9",
     "dotenv": "^9.0.0",
     "express": "^4.17.1",
-    "linebot": "^1.6.1"
+    "linebot": "^1.6.1",
+    "shopping-radar-sharedcode": "git+https://github.com/poumason/shopping-radar-sharedcode.git#master"
   },
   "devDependencies": {
     "eslint": "^7.13.0",

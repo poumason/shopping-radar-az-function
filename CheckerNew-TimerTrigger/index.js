@@ -99,7 +99,10 @@ async function _updateItem (context, existItem, newItem) {
   existItem.fields.updated_at = newItem.fields.updated_at;
   existItem.fields.price = newItem.fields.price;
   delete existItem.createdTime;
-  const updatedResult = await productsAPI.updateProduct(existItem);
+  const updatedResult = await productsAPI.updateProduct({
+    id: existItem.id,
+    fields: existItem.fields
+  });
   context.log(updatedResult);
   context.log(`update item: ${existItem.id}`);
 }

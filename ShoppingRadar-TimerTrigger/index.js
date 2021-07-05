@@ -61,7 +61,12 @@ async function _execute (context) {
 
     item.fields.updated_at = timestamp;
     item.fields.is_selling = result;
-    const updated = await productsTable.updateProduct(item);
+
+    const updated = await productsTable.updateProduct({
+      id: item.id,
+      fields: item.fields
+    });
+
     context.log(updated);
   }
 }

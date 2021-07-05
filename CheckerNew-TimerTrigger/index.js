@@ -1,9 +1,4 @@
-
-const ProductsAPI = require('../SharedCode/db/products_table_api');
-const SellerAPI = require('../SharedCode/db/seller_api');
-const RutenAPI = require('../SharedCode/ruten_api');
-const RadarAPI = require('../SharedCode/db/radar_table_api');
-const { isAvailablePrice } = require('../SharedCode/utility');
+const { ProductsAPI, SellerAPI, RutenAPI, RadarAPI, isAvailablePrice } = require('shopping-radar-sharedcode');
 
 const productsAPI = new ProductsAPI();
 const radarAPI = new RadarAPI();
@@ -27,7 +22,7 @@ async function _execute (context) {
 
   const newProducts = [];
 
-  for (const seller of sellers.records) {
+  for (const seller of sellers) {
     // get Products
     const proResult = await rutenAPI.getSearchProducts(seller.fields.id, seller.fields.search_keyword);
     const ids = proResult.Rows.map(i => i.Id);
@@ -70,12 +65,14 @@ async function _execute (context) {
   context.log(newProducts);
 
   for (const newItem of newProducts) {
-    const exist = await productsAPI.getProducts(`{id}=${newItem.fields.id}`);
-    const existItem = exist?.records[0];
+    const exist = await productsAPI.getProducts({
+      filterByFormula: `id = "${newItem.fields.id}"`
+    });
 
-    if (!existItem) {
+    if (!exist || exist.length === 0) {
       await _addItem(context, newItem);
     } else {
+      const existItem = exist[0];
       await _updateItem(context, existItem, newItem);
     }
   }

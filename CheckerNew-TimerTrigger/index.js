@@ -16,7 +16,6 @@ module.exports = async function (context, myTimer) {
 };
 
 async function _execute (context) {
-  const rutenAPI = new RutenAPI();
   const sellerAPI = new SellerAPI();
   const sellers = await sellerAPI.getSellers();
 
@@ -24,22 +23,24 @@ async function _execute (context) {
 
   for (const seller of sellers) {
     // get Products
-    const proResult = await rutenAPI.getSearchProducts(seller.fields.id, seller.fields.search_keyword);
-    const ids = proResult.Rows.map(i => i.Id);
-    const detailResult = await rutenAPI.getProdcutsInfo(ids);
+    const detailResult = await _searchProducts(context, seller.fields.id, seller.fields.search_keyword);
+
+    if (!detailResult) {
+      break;
+    }
 
     // fields: ProdId, ProdName, PriceRange, StockQty, SoldQty
-    const tagsRegx = seller.fields.tags.split(',');
+    const tagsRegex = seller.fields.tags.split(',');
 
     for (const product of detailResult) {
-      const valiedPrice = isAvailablePrice(Math.max(...product.PriceRange));
+      const validPrice = isAvailablePrice(Math.max(...product.PriceRange));
 
-      if (!valiedPrice) {
+      if (!validPrice) {
         context.log(`未開放預購: ${product.ProdName}`);
         continue;
       }
 
-      for (const tag of tagsRegx) {
+      for (const tag of tagsRegex) {
         const matched = product.ProdName.match(tag);
         if (matched) {
           const item = {
@@ -78,10 +79,24 @@ async function _execute (context) {
   }
 }
 
+async function _searchProducts (context, id, keywords) {
+  context.log(`search seller: ${id}, keywords: ${keywords}`);
+  const rutenAPI = new RutenAPI();
+  try {
+    const proResult = await rutenAPI.getSearchProducts(id, keywords);
+    const ids = proResult.Rows.map(i => i.Id);
+    const detailResult = await rutenAPI.getProdcutsInfo(ids);
+    return detailResult;
+  } catch (e) {
+    context.log(e);
+    return null;
+  }
+}
+
 async function _addItem (context, newItem) {
   console.log(newItem);
   const addedResult = await productsAPI.createProduct(newItem);
-  const addedItem = addedResult.records[0];
+  const addedItem = addedResult[0];
   context.log(`create item: ${addedItem.id}`);
 
   const radarResult = await radarAPI.createRadar({
@@ -91,7 +106,7 @@ async function _addItem (context, newItem) {
     }
   });
 
-  context.log(`create radar: ${radarResult.records[0].id}`);
+  context.log(`create radar: ${radarResult[0].id}`);
 }
 
 async function _updateItem (context, existItem, newItem) {

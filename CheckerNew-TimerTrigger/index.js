@@ -52,7 +52,8 @@ async function _execute (context) {
               is_selling: false,
               type: 'ruten',
               closed_at: (new Date(product.CloseTime)).getTime() / 1000,
-              price: Math.min(...product.PriceRange)
+              price: Math.min(...product.PriceRange),
+              image: `https://img.ruten.com.tw${product.Image}`
             }
           };
 
@@ -113,6 +114,7 @@ async function _updateItem (context, existItem, newItem) {
   existItem.fields.closed_at = newItem.fields.closed_at;
   existItem.fields.updated_at = newItem.fields.updated_at;
   existItem.fields.price = newItem.fields.price;
+  existItem.fields.image = newItem.fields.image;
   delete existItem.createdTime;
   const updatedResult = await productsAPI.updateProduct({
     id: existItem.id,

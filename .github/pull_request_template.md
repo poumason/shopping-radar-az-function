@@ -1,19 +1,11 @@
+<!--
+- Summary 撰寫不用多，足夠說明重點即可。
+- Screenshots 如果有動到畫面請貼上前後的差異；如果是新的就直接顯示。
+- Note & ToDo 請條列重點項目即可
+-->
 # Summary
-
-- this pr wants to solve blah blah
-- [link to a hackmd note]
-- [link to another note]
-- [link to external references]
-- this closes #18
-- this closes #19
 
 # Screenshots
 
-[IMG1]
-[IMG2]
-[IMG3]
+# Note & ToDo
 
-# Notes & Todos
-
-- `blah blah` needs more refactoring in the future
-- some technical debts exist in `blah blah`

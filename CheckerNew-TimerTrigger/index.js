@@ -86,7 +86,7 @@ async function _searchProducts (context, id, keywords) {
   try {
     const proResult = await rutenAPI.getSearchProducts(id, keywords);
     const ids = proResult.Rows.map(i => i.Id);
-    const detailResult = await rutenAPI.getProdcutsInfo(ids);
+    const detailResult = await rutenAPI.getProductsInfo(ids);
     return detailResult;
   } catch (e) {
     context.log(e);

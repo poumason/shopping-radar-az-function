@@ -63,6 +63,7 @@ async function _execute (context) {
 
       item.fields.updated_at = timestamp;
       item.fields.is_selling = result;
+      delete item.fields.ignore_tags;
 
       const updated = await productsTable.updateProduct({
         id: item.id,

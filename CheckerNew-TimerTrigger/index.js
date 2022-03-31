@@ -62,7 +62,6 @@ async function _execute (context) {
               name: product.ProdName,
               url: `https://www.ruten.com.tw/item/show?${product.ProdId}`,
               updated_at: (new Date()).getTime() / 1000,
-              is_selling: validPrice,
               type: 'ruten',
               closed_at: (new Date(product.CloseTime)).getTime() / 1000,
               price: Math.min(...product.PriceRange),

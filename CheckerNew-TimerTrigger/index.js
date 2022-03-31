@@ -3,6 +3,14 @@ const { ProductsAPI, SellerAPI, RutenAPI, RadarAPI, isAvailablePrice } = require
 const productsAPI = new ProductsAPI();
 const radarAPI = new RadarAPI();
 
+/**
+ * 檢查賣家是否有新的商品、更新產品資訊
+ * 1. Invoke Seller API to get all sellers
+ * 1. Search products by keyword for every seller
+ * 1. Check price of product is available
+ * 1. Available price must binding with chats to Radar
+ */
+
 module.exports = async function (context, myTimer) {
   const timeStamp = new Date().toISOString();
 
@@ -22,6 +30,7 @@ async function _execute (context) {
   const newProducts = [];
 
   for (const seller of sellers) {
+    context.log(`search seller: ${seller.fields.nick_name}, keywords: ${seller.fields.search_keyword}`);
     // get Products
     const detailResult = await _searchProducts(context, seller.fields.id, seller.fields.search_keyword);
 
@@ -31,16 +40,20 @@ async function _execute (context) {
 
     // fields: ProdId, ProdName, PriceRange, StockQty, SoldQty
     const tagsRegex = seller.fields.tags.split(',');
+    const ignoreTags = seller.fields.ignore_tags ? seller.fields.ignore_tags.split(',') : [];
 
     for (const product of detailResult) {
-      const validPrice = isAvailablePrice(Math.max(...product.PriceRange));
+      const validPrice = isAvailablePrice(Math.max(...product.PriceRange), ignoreTags);
 
       if (!validPrice) {
-        context.log(`未開放預購: ${product.ProdName}`);
+        context.log(`Pre-order not open: ${product.ProdName}, price: ${product.PriceRange}`);
         continue;
       }
 
+      console.log(`${product.ProdName}, ${validPrice}`);
+
       for (const tag of tagsRegex) {
+        // check product name is match tags
         const matched = product.ProdName.match(tag);
         if (matched) {
           const item = {
@@ -49,11 +62,12 @@ async function _execute (context) {
               name: product.ProdName,
               url: `https://www.ruten.com.tw/item/show?${product.ProdId}`,
               updated_at: (new Date()).getTime() / 1000,
-              is_selling: false,
+              is_selling: validPrice,
               type: 'ruten',
               closed_at: (new Date(product.CloseTime)).getTime() / 1000,
               price: Math.min(...product.PriceRange),
-              image: `https://img.ruten.com.tw${product.Image}`
+              image: `https://img.ruten.com.tw${product.Image}`,
+              Seller: [seller.id]
             }
           };
 
@@ -81,7 +95,6 @@ async function _execute (context) {
 }
 
 async function _searchProducts (context, id, keywords) {
-  context.log(`search seller: ${id}, keywords: ${keywords}`);
   const rutenAPI = new RutenAPI();
   try {
     const proResult = await rutenAPI.getSearchProducts(id, keywords);

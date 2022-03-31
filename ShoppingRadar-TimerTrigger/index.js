@@ -1,5 +1,12 @@
 const { isEmptyOrNull, RutenAPI, TelegramAPI, ProductsAPI } = require('shopping-radar-sharedcode');
 
+/**
+ * 檢查產品是否開賣或停止販售
+ * 1. Invoke Product API to get all productions
+ * 1. Check price available of every product
+ * 1. When price be changed, the must send message to notify radar
+ */
+
 module.exports = async function (context, myTimer) {
   const timeStamp = new Date().toISOString();
 
@@ -14,13 +21,7 @@ module.exports = async function (context, myTimer) {
 };
 
 async function _execute (context) {
-  /*
-  - get products from airtable
-  - loop to check api with type
-  */
-
   const productsTable = new ProductsAPI();
-
   const rutenAPI = new RutenAPI();
   const timestamp = (new Date()).getTime() / 1000;
 
@@ -37,6 +38,7 @@ async function _execute (context) {
     const productId = item.fields.id;
     const url = item.fields.url;
     const name = item.fields.name;
+    const ignoreTags = item.fields.ignore_tags ?? [];
 
     if (isEmptyOrNull(productId) || isEmptyOrNull(url)) {
       context.log(`${item.id} ${name} lost product id and url.`);
@@ -45,28 +47,31 @@ async function _execute (context) {
 
     const lastIsSelling = item.fields.is_selling ?? false;
 
-    // const result = await rutenAPI.check(productId, url);
-    const result = await rutenAPI.check2(productId);
+    try {
+      const result = await rutenAPI.validateProduct(productId, ignoreTags);
 
-    if (lastIsSelling === result) {
-      context.log(`狀態跟上次一樣: ${item.id} ${name} `);
-      continue;
+      if (lastIsSelling === result) {
+        context.log(`the product: ${item.id} ${name} is the same state with previous.`);
+        continue;
+      }
+
+      if (result) {
+        TelegramAPI.notify('224300083', `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
+      } else {
+        TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
+      }
+
+      item.fields.updated_at = timestamp;
+      item.fields.is_selling = result;
+
+      const updated = await productsTable.updateProduct({
+        id: item.id,
+        fields: item.fields
+      });
+
+      context.log(updated);
+    } catch (e) {
+      context.log(e);
     }
-
-    if (result) {
-      TelegramAPI.notify('224300083', `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
-    } else {
-      TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
-    }
-
-    item.fields.updated_at = timestamp;
-    item.fields.is_selling = result;
-
-    const updated = await productsTable.updateProduct({
-      id: item.id,
-      fields: item.fields
-    });
-
-    context.log(updated);
   }
 }

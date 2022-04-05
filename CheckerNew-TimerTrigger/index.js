@@ -35,7 +35,7 @@ async function _execute (context) {
     const detailResult = await _searchProducts(context, seller.fields.id, seller.fields.search_keyword);
 
     if (!detailResult) {
-      break;
+      continue;
     }
 
     // fields: ProdId, ProdName, PriceRange, StockQty, SoldQty
@@ -80,9 +80,7 @@ async function _execute (context) {
   context.log(newProducts);
 
   for (const newItem of newProducts) {
-    const exist = await productsAPI.getProducts({
-      filterByFormula: `id = "${newItem.fields.id}"`
-    });
+    const exist = await _getProductInfo(context, newItem.fields.id);
 
     if (!exist || exist.length === 0) {
       await _addItem(context, newItem);
@@ -100,6 +98,18 @@ async function _searchProducts (context, id, keywords) {
     const ids = proResult.Rows.map(i => i.Id);
     const detailResult = await rutenAPI.getProductsInfo(ids);
     return detailResult;
+  } catch (e) {
+    context.log(e);
+    return null;
+  }
+}
+
+async function _getProductInfo (context, id) {
+  try {
+    const info = await productsAPI.getProducts({
+      filterByFormula: `id = "${id}"`
+    });
+    return info;
   } catch (e) {
     context.log(e);
     return null;
@@ -128,6 +138,7 @@ async function _updateItem (context, existItem, newItem) {
   existItem.fields.price = newItem.fields.price;
   existItem.fields.image = newItem.fields.image;
   delete existItem.createdTime;
+  delete existItem.fields.ignore_tags;
   const updatedResult = await productsAPI.updateProduct({
     id: existItem.id,
     fields: existItem.fields

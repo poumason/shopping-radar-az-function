@@ -1,4 +1,6 @@
-const { isEmptyOrNull, RutenAPI, TelegramAPI, ProductsAPI } = require('shopping-radar-sharedcode');
+const { isEmptyOrNull, RutenAPI, TelegramAPI, ProductsAPI, LINEAPI } = require('shopping-radar-sharedcode');
+
+const line = new LINEAPI();
 
 /**
  * 檢查產品是否開賣或停止販售
@@ -57,8 +59,10 @@ async function _execute (context) {
 
       if (result) {
         TelegramAPI.notify('224300083', `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
+        _sendToLINE(item, `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
       } else {
         TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
+        _sendToLINE(item, `_已結束_\n\n[${name}](${url})`);
       }
 
       item.fields.updated_at = timestamp;
@@ -75,4 +79,34 @@ async function _execute (context) {
       context.log(e);
     }
   }
+}
+
+async function _sendToLINE (product, actionText) {
+  const message = {
+    type: 'template',
+    altText: actionText,
+    template: {
+      type: 'buttons',
+      thumbnailImageUrl: product.fields.image,
+      imageAspectRatio: 'rectangle',
+      imageSize: 'cover',
+      imageBackgroundColor: '#FFFFFF',
+      title: `NT$ ${product.fields.price}`,
+      text: product.fields.name,
+      defaultAction: {
+        type: 'uri',
+        label: 'View detail',
+        uri: product.fields.url
+      },
+      actions: [
+        {
+          type: 'uri',
+          label: 'View detail',
+          uri: product.fields.url
+        }
+      ]
+    }
+  };
+
+  await line.push(['Ud9e0913b9ccc5a83b6eeeba4db32b407'], message);
 }

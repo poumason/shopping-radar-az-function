@@ -125,7 +125,7 @@ async function _addItem (context, newItem) {
   const radarResult = await radarAPI.createRadar({
     fields: {
       Products: [addedItem.id],
-      Chats: ['recUiDkMKUQONnHxl']
+      Chats: ['recUiDkMKUQONnHxl', 'reciD5YV0V1wWYAAB']
     }
   });
 

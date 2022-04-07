@@ -50,23 +50,19 @@ async function _execute (context) {
     const lastIsSelling = item.fields.is_selling ?? false;
 
     try {
-      const result = await rutenAPI.validateProduct(productId, ignoreTags);
+      const isSelling = await rutenAPI.validateProduct(productId, ignoreTags);
 
-      if (lastIsSelling === result) {
+      if (lastIsSelling === isSelling) {
         context.log(`the product: ${item.id} ${name} is the same state with previous.`);
         continue;
       }
 
-      if (result) {
-        TelegramAPI.notify('224300083', `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
-        _sendToLINE(item, `*立即購買* NT$ ${item.fields.price}\n\n[${name}](${url})`);
-      } else {
-        TelegramAPI.notify('224300083', `_已結束_\n\n[${name}](${url})`, true);
-        _sendToLINE(item, `_已結束_\n\n[${name}](${url})`);
-      }
+      const actionObj = _getActionObject(item, isSelling);
+      _sendToTelegram(actionObj);
+      _sendToLINE(actionObj);
 
       item.fields.updated_at = timestamp;
-      item.fields.is_selling = result;
+      item.fields.is_selling = isSelling;
       delete item.fields.ignore_tags;
 
       const updated = await productsTable.updateProduct({
@@ -81,32 +77,52 @@ async function _execute (context) {
   }
 }
 
-async function _sendToLINE (product, actionText) {
+function _getActionObject (product, isSelling) {
+  const actionObj = {
+    text: product.fields.name,
+    price: product.fields.price,
+    url: product.fields.url,
+    image: product.fields.image,
+    title: `${isSelling ? `*立即購買* NT$ ${product.fields.price}` : '_已結束_'}`,
+    silently: !isSelling
+  };
+  actionObj.altText = `${actionObj.title}\n\n[${product.fields.name}](${product.fields.url})`;
+
+  return actionObj;
+}
+
+async function _sendToTelegram (actionObj) {
+  const user = '224300083';
+  TelegramAPI.notify(user, actionObj.altText, actionObj.silently);
+}
+
+async function _sendToLINE (actionObj) {
+  const user = 'Ud9e0913b9ccc5a83b6eeeba4db32b407';
   const message = {
     type: 'template',
-    altText: actionText,
+    altText: actionObj.altText,
     template: {
       type: 'buttons',
-      thumbnailImageUrl: product.fields.image,
+      thumbnailImageUrl: actionObj.image,
       imageAspectRatio: 'rectangle',
       imageSize: 'cover',
       imageBackgroundColor: '#FFFFFF',
-      title: `NT$ ${product.fields.price}`,
-      text: product.fields.name,
+      title: actionObj.title,
+      text: actionObj.text,
       defaultAction: {
         type: 'uri',
         label: 'View detail',
-        uri: product.fields.url
+        uri: actionObj.url
       },
       actions: [
         {
           type: 'uri',
           label: 'View detail',
-          uri: product.fields.url
+          uri: actionObj.url
         }
       ]
     }
   };
 
-  await line.push(['Ud9e0913b9ccc5a83b6eeeba4db32b407'], message);
+  await line.push([user], message);
 }

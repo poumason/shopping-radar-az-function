@@ -1,4 +1,4 @@
-const { ProductsAPI, SellerAPI, RutenAPI, RadarAPI, isAvailablePrice } = require('shopping-radar-sharedcode');
+const { ProductsAPI, SellerAPI, RutenAPI, RadarAPI, isAvailablePrice, TelegramAPI } = require('shopping-radar-sharedcode');
 
 const productsAPI = new ProductsAPI();
 const radarAPI = new RadarAPI();
@@ -18,7 +18,11 @@ module.exports = async function (context, myTimer) {
     context.log('Checker New is running late!');
   }
 
-  await _execute(context);
+  try {
+    await _execute(context);
+  } catch (e) {
+    TelegramAPI.notify('224300083', `shopping-rader\n${e}`);
+  }
 
   context.log('Checker New timer trigger function ran!', timeStamp);
 };

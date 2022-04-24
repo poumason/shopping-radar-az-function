@@ -1,7 +1,5 @@
 const { isEmptyOrNull, RutenAPI, TelegramAPI, ProductsAPI, LINEAPI } = require('shopping-radar-sharedcode');
 
-const line = new LINEAPI();
-
 /**
  * 檢查產品是否開賣或停止販售
  * 1. Invoke Product API to get all productions
@@ -17,7 +15,11 @@ module.exports = async function (context, myTimer) {
   }
   context.log('Shopping Radar timer trigger function ran!', timeStamp);
 
-  await _execute(context);
+  try {
+    await _execute(context);
+  } catch (e) {
+    TelegramAPI.notify('224300083', `shopping-rader\n${e}`);
+  }
 
   context.log('Shppoing Radar executed process.');
 };
@@ -26,6 +28,7 @@ async function _execute (context) {
   const productsTable = new ProductsAPI();
   const rutenAPI = new RutenAPI();
   const timestamp = (new Date()).getTime() / 1000;
+  const line = new LINEAPI();
 
   const data = await productsTable.getProducts();
 
@@ -59,7 +62,7 @@ async function _execute (context) {
 
       const actionObj = _getActionObject(item, isSelling);
       _sendToTelegram(actionObj);
-      _sendToLINE(actionObj);
+      _sendToLINE(line, actionObj);
 
       item.fields.updated_at = timestamp;
       item.fields.is_selling = isSelling;
@@ -96,7 +99,7 @@ async function _sendToTelegram (actionObj) {
   TelegramAPI.notify(user, actionObj.altText, actionObj.silently);
 }
 
-async function _sendToLINE (actionObj) {
+async function _sendToLINE (sender, actionObj) {
   const user = 'Ud9e0913b9ccc5a83b6eeeba4db32b407';
   const message = {
     type: 'template',
@@ -124,5 +127,5 @@ async function _sendToLINE (actionObj) {
     }
   };
 
-  await line.push([user], message);
+  await sender.push([user], message);
 }
